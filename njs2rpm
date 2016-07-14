@@ -13,7 +13,7 @@ SCRIPTPATH=$(dirname $(readlink "${BASH_SOURCE[0]}" 2> /dev/null ) 2> /dev/null)
 if [ "$SCRIPTPATH" == "" ]
 then
  SCRIPTPATH=$( cd "$( dirname "${BASH_SOURCE[0]}")" && pwd )
-fi 
+fi
 
 
 # build SPEC from template
@@ -81,7 +81,7 @@ fi
 
 BUNDLESNIPPET=""
 if [ "$TYPE" == "single" ]
-then 
+then
  BUNDLESNIPPET="rm -rf node_modules"
 fi
 
@@ -172,15 +172,20 @@ PREFIX=""
 
 if [ "$TYPE" == "bundle" ]
 then
+ SPECFILE="nodejs-bundle-$NAME.spec"
  pushd .
  TMPDIR=/tmp/npm.$(date +%s)
  mkdir -p $TMPDIR
+ echo "Installing node_modules in $TMPDIR..."
  cd $TMPDIR
  npm install $NAME@$VERSION
  cd node_modules
  mv $NAME package
+ mkdir package/node_modules
+ cp -R * package/node_modules
+ echo "Packing node_modules in $NAME-VERSION.tgz..."
  tar zcvf $NAME-$VERSION.tgz package
- BUNDLEDMODULES=$(find package/node_modules/ -type f -name package.json -exec sh -c "echo -n 'bundled-npm('; dirname {} | tr '/' \"\n\" |tac |head -n 1 | tr -d \"\n\" ; echo -n ') = ' ; grep '\"version\":' {} |  egrep -o '[0-9.]+' " \; )
+ BUNDLEDMODULES=$(find $TMPDIR/node_modules/ -type f -name package.json -exec sh -c "echo -n 'bundled-npm('; dirname {} | tr '/' \"\n\" |tac |head -n 1 | tr -d \"\n\" ; echo -n ') = ' ; grep '\"version\":' {} |  egrep -o '[0-9.]+' " \; )
  mv $NAME-$VERSION.tgz $SOURCESDIR
  rm -rf $TMPDIR
  popd
@@ -204,11 +209,11 @@ build_spec $TEMPLATEFILE
 # create .spec always
 echo "$SPECTEMPLATE" > $SPECSDIR/$SPECFILE
 
-if [ "$OUTPUT" == "spec" ] 
+if [ "$OUTPUT" == "spec" ]
 then
  echo "created $SPECSDIR/$SPECFILE"
  exit
-elif [ "$OUTPUT" == "rpm" ] 
+elif [ "$OUTPUT" == "rpm" ]
 then
  rpmbuild --define "_topdir $RPMTOPDIR" --nodeps -bb $SPECSDIR/$SPECFILE
 fi

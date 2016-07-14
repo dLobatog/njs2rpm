@@ -1,11 +1,10 @@
-%define dist %{expand:%%(/usr/lib/rpm/redhat/dist.sh --dist)}
-#%define _rpmconfigdir %{_libdir}/rpm
-%define _rpmconfigdir %{_prefix}/lib/rpm
-%define debug_package %{nil}
+# TODOs:
+#   - list doc files properly (%doc %{nodejs_sitelib}/%{npm_name}/README.md)
+#   - exclude unnecessary files from %files section
 
-$PROVIDES
+%global npm_name $NAME
 
-Name: nodejs-$PREFIX$NAME
+Name: nodejs-%{npm_name}
 Version: $VERSION
 Release: $RELEASE%{?dist}
 Summary: $SUMMARY
@@ -13,15 +12,25 @@ License: $LICENSE
 Group: Development/Libraries
 URL: $PROJECTURL
 Source0: http://registry.npmjs.org/$NAME/-/$NAME-$VERSION.tgz
-BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildArch: noarch
-
 $REQUIRES
 BuildRequires: nodejs-devel
 BuildRequires: nodejs-packaging
+BuildArch: noarch
+ExclusiveArch: %{nodejs_arches} noarch
+Provides: npm(%{npm_name}) = %{version}
+$PROVIDES
 
 %description
 $DESCRIPTION
+
+%package doc
+Summary: Documentation for nodejs-%{npm_name}
+Group: Documentation
+Requires: nodejs-%{npm_name} = %{version}-%{release}
+BuildArch: noarch
+
+%description doc
+This package contains documentation for nodejs-%{npm_name}
 
 %prep
 %setup -q -n package
@@ -32,9 +41,8 @@ $BUNDLESNIPPET
 #nothing to do
 
 %install
-rm -rf %{buildroot}
-mkdir -p %{buildroot}%{nodejs_sitelib}/$NAME
-cp -pfr $FILESTOCOPY %{buildroot}%{nodejs_sitelib}/$NAME > /dev/null 2>&1 || :
+mkdir -p %{buildroot}%{nodejs_sitelib}/%{npm_name}
+cp -pfr $FILESTOCOPY %{buildroot}%{nodejs_sitelib}/%{npm_name}
 #if any binaries are included, symlink them to bindir here
 mkdir -p %{buildroot}%{_bindir}
 $BINSNIPPET
@@ -42,17 +50,11 @@ $SYMLINKDEPS
 
 %check
 
-%clean
-rm -rf %{buildroot}
-
 %files
-%defattr(-,root,root,-)
-%{nodejs_sitelib}/$NAME
+%{nodejs_sitelib}/%{npm_name}
 $FILESBINSNIPPET
 
+%files doc
 %doc $DOCFILES
 
 %changelog
-* $DATE Built with NJS2RPM <njs2rpm@example.com> - $VERSION-$RELEASE
-- first release
-
